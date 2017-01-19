@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
+#include <utility>
 
 // 复习排序算法
 
@@ -222,15 +223,144 @@ void MergeSort(int array[],int array_length)
   delete[] arraytmp;
 }
 
-// 快速排序
-void QuickSort(int array[],int array_length)
+// 快速排序辅助函数：优化策略（1.基准元素选取：随机选取或者三者取中间值
+// 2.分割策略：可分为3段：左边都小于基准元素，中间都等于基准元素，右边
+// 都大于基准元素）
+int Partation(int array[],int left,int right)
 {
+  int j = left;
+  int pivot = array[right];
+  for(int i = left; i < right; ++i)
+  {
+    if( array[i] <= pivot )
+      swap(array[i],array[j++]);
+  }
+  swap(array[j],array[right]);
+  return j;
 }
 
-// 桶排序
-void BucketSort(int array[],int array_length)
-{
+// 快速排序：改进（当元素个数达到一个较小值(20)时，改用插入排序）
+void QuickSort(int array[],int left,int right)
+{  
+  if( left < right )
+  {
+    int p = Partation(array,left,right);
+    QuickSort(array,left,p-1);
+    QuickSort(array,p+1,right);
+  }
+}
 
+// 快速排序改进
+pair<int,int> Partation1(int array[],int left,int right)
+{
+  int k = left,p = right;
+  for(int i = left; i < p; )
+  {
+    if( array[i] < array[right] )
+      swap(array[k++],array[i++]);
+    else if( array[i] == array[right] )
+      swap(array[--p],array[i]);
+    else
+      ++i;
+  }
+
+  int m = min(p-k,right-p+1);
+  for(int i = 0; i < m; ++i)
+  {
+    swap(array[k+i],array[right-i]);
+  }
+
+  return make_pair(k,right-p+k);
+}
+
+void QuickSort1(int array[],int left,int right)
+{
+  if( left < right )
+  {
+    auto p = Partation1(array,left,right);
+    QuickSort1(array,left,p.first-1);
+    QuickSort1(array,p.second+1,right);
+  }
+}
+
+// 选取基准元素，比较left、mid和right对应的元素的中间值
+int Median3(int array[],int left,int right)
+{
+  int mid = left + (right - left)/2;
+  if( array[left] > array[mid] )
+  {
+    swap(array[left],array[mid]);
+  }
+  if( array[left] > array[right] )
+  {
+    swap(array[left],array[right]);
+  }
+  if( array[mid] > array[right] )
+  {
+    swap(array[mid],array[right]);
+  }
+
+  swap(array[mid],array[right-1]);
+  return array[right-1];
+}
+
+#define CutOff 3
+
+void QuickSort2(int array[],int left,int right)
+{
+  int i,j;
+  int pivot;
+
+  if( left + CutOff >= right )
+  {
+    pivot = Median3(array,left,right);
+    i = left;
+    j = right - 1;
+    for(;;)
+    {
+      while( array[++i] < pivot ){}
+
+      while( array[--j] > pivot ){}
+
+      if( i < j )
+      {
+        swap(array[i],array[j]);
+      }
+      else
+        break;
+    }
+
+    swap(array[i],array[right-1]);
+    QuickSort2(array,left,i-1);
+    QuickSort2(array,i+1,right);
+  }
+  else
+  {
+    InsertSort(array+left,right-left+1);
+  }
+
+}
+
+// 计数排序：排序的所有元素都在小范围内
+void CountSort(int array[],int array_length)
+{
+  int array_bucket[array_length];
+  for(int i = 0; i < array_length; ++i)
+    array_bucket[i] = 0;
+
+  for(int i = 0; i < array_length; ++i)
+  {
+    ++array_bucket[array[i]];
+  }
+  int j = 0;
+  for(int i = 0; i < array_length; ++i)
+  {
+    while( array_bucket[i] > 0 && j < array_length )
+    {
+      array[j++] = i;
+      --array_bucket[i];
+    }
+  }
 }
 
 int main(int argc,char *argv[])
@@ -282,6 +412,24 @@ int main(int argc,char *argv[])
   PrintArray(array,array_length);
 
   PerfectShuffle(array,array_length);
+  QuickSort(array,0,array_length - 1);
+  cout << "Quick sort: ";
+  PrintArray(array,array_length);
+
+  PerfectShuffle(array,array_length);
+  QuickSort1(array,0,array_length-1);
+  cout << "Quick sort1: ";
+  PrintArray(array,array_length);
+
+  PerfectShuffle(array,array_length);
+  QuickSort2(array,0,array_length-1);
+  cout << "Quick sort2: ";
+  PrintArray(array,array_length);
+
+  PerfectShuffle(array,array_length);
+  CountSort(array,array_length);
+  cout << "Count sort: ";
+  PrintArray(array,array_length);
 
   return EXIT_SUCCESS;
 }
